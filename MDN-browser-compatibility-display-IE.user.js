@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260502-2040
+// @version      20260502-2108
 // @description  MDN browser compatibility display IE
 // @author       bddjr
 // @license      MIT
@@ -104,7 +104,7 @@ Response.prototype.json = async function () {
     const out = await json.apply(this, arguments)
     if (out?.data?.__compat?.support) {
         enableDisplayIE = !!(forceEnableDisplayIE || out.data.__compat.support.ie?.[0]?.version_added)
-        console.log('[browser-compatibility-display-ie] enableDisplayIE:', enableDisplayIE)
+        console.log('[MDN-browser-compatibility-display-IE] enableDisplayIE:', enableDisplayIE)
         if (enableDisplayIE) {
             hijackArrayIncludes()
             addStyleIEIcon()
