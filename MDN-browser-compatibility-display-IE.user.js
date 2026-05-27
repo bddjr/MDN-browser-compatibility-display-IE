@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260502-2108
+// @version      20260527-2026
 // @description  MDN browser compatibility display IE
 // @author       bddjr
 // @license      MIT
@@ -15,6 +15,8 @@
 
 // For example:
 // https://developer.mozilla.org/docs/Web/API/Document/querySelector
+// https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/autocomplete
+// https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/disabled
 
 
 // Config:
@@ -40,41 +42,60 @@ const ieIconURL = "data:image/svg+xml," + encodeURIComponent(
     '8.28 16.67z" fill="currentColor"/></svg>'
 )
 
+document.head.insertAdjacentHTML('beforeend', `<style>
+    :root {
+        ---ie-icon-url: url("${ieIconURL}");
+    }
+</style>`)
 
-const styleIEIcon = document.createElement('style')
-styleIEIcon.innerHTML = `
+const styleOuterHTML = `<style mdn-browser-compatibility-display-ie>
     .icon.icon-${ieName} {
-        -webkit-mask-image:url("${ieIconURL}");
-        mask-image:url("${ieIconURL}");
+        -webkit-mask-image: var(---ie-icon-url);
+        mask-image: var(---ie-icon-url);
     }
     .bc-browser-ie.bc-supports-no .bcd-cell-text-wrapper {
         --color-text-red: var(--color-border-secondary);
         opacity: 0.5;
     }
-`
+</style>`
 
-/** @type {number | null} */
-let addStyleIEIcon__intervalId = null
-
-function addStyleIEIcon() {
-    if (addStyleIEIcon__intervalId !== null) return;
-    const getShadowRoot = () => (
-        document.querySelector('mdn-compat-table-lazy')?.shadowRoot
-            ?.querySelector?.('mdn-compat-table')?.shadowRoot
-    )
-    let shadowRoot = getShadowRoot()
-    if (shadowRoot) {
-        shadowRoot.contains(styleIEIcon) || shadowRoot.appendChild(styleIEIcon)
-        return
-    }
-    addStyleIEIcon__intervalId = setInterval(() => {
-        if (shadowRoot = getShadowRoot()) {
-            clearInterval(addStyleIEIcon__intervalId)
-            addStyleIEIcon__intervalId = null
-            shadowRoot.contains(styleIEIcon) || shadowRoot.appendChild(styleIEIcon)
+const CustomElementDefine = customElements.define
+customElements.define = function (name, constructor) {
+    if (name == "mdn-compat-table") {
+        // console.log('[MDN-browser-compatibility-display-IE]', name, constructor)
+        const render = constructor.prototype.render
+        constructor.prototype.render = function () {
+            let out = render.apply(this, arguments)
+            const strings = Array.prototype.with.call(out.strings, 0, styleOuterHTML + out.strings[0])
+            strings.raw = strings
+            out.strings = strings
+            if (out.strings !== strings) {
+                out = Object.create(out)
+                out.strings = strings
+            }
+            // console.log('[MDN-browser-compatibility-display-IE]', out)
+            return out
         }
-    }, 100)
+    }
+    return CustomElementDefine.apply(this, arguments)
 }
+
+// /** @type {number | null} */
+// let addStyleIEIcon__timeoutId = null
+
+// function addStyleIEIcon() {
+//     if (addStyleIEIcon__timeoutId !== null) return;
+//     addStyleIEIcon__timeoutId = setTimeout(() => {
+//         addStyleIEIcon__timeoutId = null
+//         const allCompatTableLazy = document.querySelectorAll('mdn-compat-table-lazy')
+//         for (const compatTableLazy of allCompatTableLazy) {
+//             const shadowRoot = compatTableLazy.shadowRoot?.querySelector?.('mdn-compat-table')?.shadowRoot
+//             if (shadowRoot && !shadowRoot.querySelector('style[mdn-browser-compatibility-display-ie]')) {
+//                 shadowRoot.lastElementChild.insertAdjacentHTML('afterend', styleOuterHTML)
+//             }
+//         }
+//     }, 1)
+// }
 
 let enableDisplayIE = !!forceEnableDisplayIE
 
@@ -107,7 +128,7 @@ Response.prototype.json = async function () {
         console.log('[MDN-browser-compatibility-display-IE] enableDisplayIE:', enableDisplayIE)
         if (enableDisplayIE) {
             hijackArrayIncludes()
-            addStyleIEIcon()
+            // addStyleIEIcon()
             if (out.browsers) {
                 const ie = out.browsers[ieName]
                 if (ie) {
