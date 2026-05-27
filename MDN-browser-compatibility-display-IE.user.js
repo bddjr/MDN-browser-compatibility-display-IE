@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260527-2218
+// @version      20260527-2230
 // @description  MDN browser compatibility display IE
 // @author       bddjr
 // @license      MIT
@@ -17,12 +17,6 @@
 // https://developer.mozilla.org/docs/Web/API/Document/querySelector
 // https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/autocomplete
 // https://developer.mozilla.org/docs/Web/HTML/Reference/Attributes/disabled
-
-
-// Config:
-// force enable display IE.
-// if false, only display when IE support API.
-const forceEnableDisplayIE = true
 
 
 //===============================================================================================================
@@ -72,55 +66,9 @@ Array.prototype.push = function (a) {
     return ArrayPrototypePush.apply(this, arguments)
 }
 
-// const styleOuterHTML = `<style mdn-browser-compatibility-display-ie>${css}</style>`
-
-// const CustomElementsDefine = customElements.define
-// customElements.define = function (name, constructor) {
-//     if (name == "mdn-compat-table") {
-//         console.log('[MDN-browser-compatibility-display-IE] mdn-compat-table', constructor)
-//         const render = constructor.prototype.render
-//         constructor.prototype.render = function () {
-//             let out = render.apply(this, arguments)
-//             // inject css
-//             const strings = Array.prototype.with.call(out.strings, 0, styleOuterHTML + out.strings[0])
-//             strings.raw = strings.slice()
-//             out.strings = strings
-//             if (out.strings !== strings) {
-//                 out = Object.create(out)
-//                 out.strings = strings
-//             }
-//             console.log('[MDN-browser-compatibility-display-IE] inject css', out)
-//             return out
-//         }
-//     }
-//     return CustomElementsDefine.apply(this, arguments)
-// }
-
-// /** @type {number | null} */
-// let addStyleIEIcon__timeoutId = null
-
-// function addStyleIEIcon() {
-//     if (addStyleIEIcon__timeoutId !== null) return;
-//     addStyleIEIcon__timeoutId = setTimeout(() => {
-//         addStyleIEIcon__timeoutId = null
-//         const allCompatTableLazy = document.querySelectorAll('mdn-compat-table-lazy')
-//         for (const compatTableLazy of allCompatTableLazy) {
-//             const shadowRoot = compatTableLazy.shadowRoot?.querySelector?.('mdn-compat-table')?.shadowRoot
-//             if (shadowRoot && !shadowRoot.querySelector('style[mdn-browser-compatibility-display-ie]')) {
-//                 shadowRoot.lastElementChild.insertAdjacentHTML('afterend', styleOuterHTML)
-//             }
-//         }
-//     }, 1)
-// }
-
-let enableDisplayIE = !!forceEnableDisplayIE
-
-/** @type {null | typeof Array.prototype.includes} */
-let ArrayPrototypeIncludes = null
-
-function hijackArrayIncludes__hijacked(s) {
+const ArrayPrototypeIncludes = Array.prototype.includes
+Array.prototype.includes = function (s) {
     return ArrayPrototypeIncludes.apply(this, arguments) || (
-        enableDisplayIE &&
         s === ieName &&
         ArrayPrototypeIncludes.call(this, "chrome") &&
         ArrayPrototypeIncludes.call(this, "firefox") &&
@@ -129,36 +77,21 @@ function hijackArrayIncludes__hijacked(s) {
     )
 }
 
-function hijackArrayIncludes() {
-    if (Array.prototype.includes !== hijackArrayIncludes__hijacked) {
-        ArrayPrototypeIncludes = Array.prototype.includes
-        Array.prototype.includes = hijackArrayIncludes__hijacked
-    }
-}
-
 const ResponsePrototypeJson = Response.prototype.json
 Response.prototype.json = async function () {
     const out = await ResponsePrototypeJson.apply(this, arguments)
-    if (out?.data?.__compat?.support) {
-        enableDisplayIE = !!(forceEnableDisplayIE || out.data.__compat.support.ie?.[0]?.version_added)
-        console.log('[MDN-browser-compatibility-display-IE] enableDisplayIE:', enableDisplayIE)
-        if (enableDisplayIE) {
-            hijackArrayIncludes()
-            // addStyleIEIcon()
-            if (out.browsers) {
-                const ie = out.browsers[ieName]
-                if (ie) {
-                    delete out.browsers[ieName]
-                    out.browsers[ieName] = ie
-                } else {
-                    out.browsers[ieName] = {
-                        "accepts_flags": false,
-                        "accepts_webextensions": false,
-                        "name": "Internet Explorer",
-                        "releases": {},
-                        "type": "desktop"
-                    }
-                }
+    if (out?.browsers && out.data?.__compat?.support) {
+        const ie = out.browsers[ieName]
+        if (ie) {
+            delete out.browsers[ieName]
+            out.browsers[ieName] = ie
+        } else {
+            out.browsers[ieName] = {
+                "accepts_flags": false,
+                "accepts_webextensions": false,
+                "name": "Internet Explorer",
+                "releases": {},
+                "type": "desktop"
             }
         }
     }
