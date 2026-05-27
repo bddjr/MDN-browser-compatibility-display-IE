@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260527-2026
+// @version      20260527-2049
 // @description  MDN browser compatibility display IE
 // @author       bddjr
 // @license      MIT
@@ -59,13 +59,14 @@ const styleOuterHTML = `<style mdn-browser-compatibility-display-ie>
     }
 </style>`
 
-const CustomElementDefine = customElements.define
+const CustomElementsDefine = customElements.define
 customElements.define = function (name, constructor) {
     if (name == "mdn-compat-table") {
-        // console.log('[MDN-browser-compatibility-display-IE]', name, constructor)
+        // console.log('[MDN-browser-compatibility-display-IE] mdn-compat-table', constructor)
         const render = constructor.prototype.render
         constructor.prototype.render = function () {
             let out = render.apply(this, arguments)
+            // inject css
             const strings = Array.prototype.with.call(out.strings, 0, styleOuterHTML + out.strings[0])
             strings.raw = strings
             out.strings = strings
@@ -73,11 +74,11 @@ customElements.define = function (name, constructor) {
                 out = Object.create(out)
                 out.strings = strings
             }
-            // console.log('[MDN-browser-compatibility-display-IE]', out)
+            // console.log('[MDN-browser-compatibility-display-IE] inject css', out)
             return out
         }
     }
-    return CustomElementDefine.apply(this, arguments)
+    return CustomElementsDefine.apply(this, arguments)
 }
 
 // /** @type {number | null} */
@@ -100,29 +101,29 @@ customElements.define = function (name, constructor) {
 let enableDisplayIE = !!forceEnableDisplayIE
 
 /** @type {null | typeof Array.prototype.includes} */
-let hijackArrayIncludes__raw = null
+let ArrayPrototypeIncludes = null
 
 function hijackArrayIncludes__hijacked(s) {
-    return hijackArrayIncludes__raw.apply(this, arguments) || (
+    return ArrayPrototypeIncludes.apply(this, arguments) || (
         enableDisplayIE &&
         s === ieName &&
-        hijackArrayIncludes__raw.call(this, "chrome") &&
-        hijackArrayIncludes__raw.call(this, "firefox") &&
-        hijackArrayIncludes__raw.call(this, "safari") &&
-        hijackArrayIncludes__raw.call(this, "nodejs")
+        ArrayPrototypeIncludes.call(this, "chrome") &&
+        ArrayPrototypeIncludes.call(this, "firefox") &&
+        ArrayPrototypeIncludes.call(this, "safari") &&
+        ArrayPrototypeIncludes.call(this, "nodejs")
     )
 }
 
 function hijackArrayIncludes() {
     if (Array.prototype.includes !== hijackArrayIncludes__hijacked) {
-        hijackArrayIncludes__raw = Array.prototype.includes
+        ArrayPrototypeIncludes = Array.prototype.includes
         Array.prototype.includes = hijackArrayIncludes__hijacked
     }
 }
 
-const { json } = Response.prototype
+const ResponsePrototypeJson = Response.prototype.json
 Response.prototype.json = async function () {
-    const out = await json.apply(this, arguments)
+    const out = await ResponsePrototypeJson.apply(this, arguments)
     if (out?.data?.__compat?.support) {
         enableDisplayIE = !!(forceEnableDisplayIE || out.data.__compat.support.ie?.[0]?.version_added)
         console.log('[MDN-browser-compatibility-display-IE] enableDisplayIE:', enableDisplayIE)
