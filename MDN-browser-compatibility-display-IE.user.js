@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260527-2049
+// @version      20260527-2218
 // @description  MDN browser compatibility display IE
 // @author       bddjr
 // @license      MIT
@@ -42,44 +42,59 @@ const ieIconURL = "data:image/svg+xml," + encodeURIComponent(
     '8.28 16.67z" fill="currentColor"/></svg>'
 )
 
-document.head.insertAdjacentHTML('beforeend', `<style>
-    :root {
-        ---ie-icon-url: url("${ieIconURL}");
-    }
-</style>`)
-
-const styleOuterHTML = `<style mdn-browser-compatibility-display-ie>
+const css = `
     .icon.icon-${ieName} {
-        -webkit-mask-image: var(---ie-icon-url);
-        mask-image: var(---ie-icon-url);
+        mask-image: url("${ieIconURL}");
     }
     .bc-browser-ie.bc-supports-no .bcd-cell-text-wrapper {
         --color-text-red: var(--color-border-secondary);
         opacity: 0.5;
     }
-</style>`
+`.replace(/;\s*(?=})|\n\s*| +(?={)|(?<=:) +/g, '')
 
-const CustomElementsDefine = customElements.define
-customElements.define = function (name, constructor) {
-    if (name == "mdn-compat-table") {
-        // console.log('[MDN-browser-compatibility-display-IE] mdn-compat-table', constructor)
-        const render = constructor.prototype.render
-        constructor.prototype.render = function () {
-            let out = render.apply(this, arguments)
-            // inject css
-            const strings = Array.prototype.with.call(out.strings, 0, styleOuterHTML + out.strings[0])
-            strings.raw = strings
-            out.strings = strings
-            if (out.strings !== strings) {
-                out = Object.create(out)
-                out.strings = strings
-            }
-            // console.log('[MDN-browser-compatibility-display-IE] inject css', out)
-            return out
-        }
+const ArrayPrototypePush = Array.prototype.push
+Array.prototype.push = function (a) {
+    if (
+        Array.isArray(a) &&
+        typeof a[0] == 'number' &&
+        typeof a[1] == 'string' &&
+        a[1].includes('.icon.icon-chrome{') &&
+        a[1].includes('.icon.icon-firefox{') &&
+        a[1].includes('.icon.icon-safari{') &&
+        a[1].includes('.icon.icon-nodejs{')
+    ) {
+        // console.log('[MDN-browser-compatibility-display-IE] ArrayPrototypePush', this, arguments)
+        // inject css
+        a[1] += css
+        // cancel hijack
+        Array.prototype.push = ArrayPrototypePush
     }
-    return CustomElementsDefine.apply(this, arguments)
+    return ArrayPrototypePush.apply(this, arguments)
 }
+
+// const styleOuterHTML = `<style mdn-browser-compatibility-display-ie>${css}</style>`
+
+// const CustomElementsDefine = customElements.define
+// customElements.define = function (name, constructor) {
+//     if (name == "mdn-compat-table") {
+//         console.log('[MDN-browser-compatibility-display-IE] mdn-compat-table', constructor)
+//         const render = constructor.prototype.render
+//         constructor.prototype.render = function () {
+//             let out = render.apply(this, arguments)
+//             // inject css
+//             const strings = Array.prototype.with.call(out.strings, 0, styleOuterHTML + out.strings[0])
+//             strings.raw = strings.slice()
+//             out.strings = strings
+//             if (out.strings !== strings) {
+//                 out = Object.create(out)
+//                 out.strings = strings
+//             }
+//             console.log('[MDN-browser-compatibility-display-IE] inject css', out)
+//             return out
+//         }
+//     }
+//     return CustomElementsDefine.apply(this, arguments)
+// }
 
 // /** @type {number | null} */
 // let addStyleIEIcon__timeoutId = null
