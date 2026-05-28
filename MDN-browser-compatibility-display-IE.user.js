@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260527-2230
+// @version      20260528-1101
 // @description  MDN browser compatibility display IE
 // @author       bddjr
 // @license      MIT
@@ -21,7 +21,13 @@
 
 //===============================================================================================================
 
-const ieName = "ie"
+const ArrayPrototypePush = Array.prototype.push
+const ArrayPrototypeIncludes = Array.prototype.includes
+const ResponsePrototypeJson = Response.prototype.json
+
+const browserListHas = ["chrome", "firefox", "safari", "nodejs"]
+
+const ieId = "ie"
 
 // Copy from https://github.com/mdn/mdn-dinocons/blob/main/browsers/internet-explorer.svg
 const ieIconURL = "data:image/svg+xml," + encodeURIComponent(
@@ -37,56 +43,61 @@ const ieIconURL = "data:image/svg+xml," + encodeURIComponent(
 )
 
 const css = `
-    .icon.icon-${ieName} {
+    .icon.icon-${ieId} {
         mask-image: url("${ieIconURL}");
     }
     .bc-browser-ie.bc-supports-no .bcd-cell-text-wrapper {
         --color-text-red: var(--color-border-secondary);
         opacity: 0.5;
     }
-`.replace(/;\s*(?=})|\n\s*| +(?={)|(?<=:) +/g, '')
+`.replace(/;\s*(?=})|\s*\n\s*| +(?={)|(?<=:) +/g, '')
 
-const ArrayPrototypePush = Array.prototype.push
+let cancelHijackArrayPrototypePush = false
 Array.prototype.push = function (a) {
-    if (
+    if (cancelHijackArrayPrototypePush) {
+        Array.prototype.push = ArrayPrototypePush
+    } else if (
         Array.isArray(a) &&
         typeof a[0] == 'number' &&
         typeof a[1] == 'string' &&
-        a[1].includes('.icon.icon-chrome{') &&
-        a[1].includes('.icon.icon-firefox{') &&
-        a[1].includes('.icon.icon-safari{') &&
-        a[1].includes('.icon.icon-nodejs{')
+        browserListHas.every(browserId => a[1].includes(`.icon.icon-${browserId}{`))
     ) {
         // console.log('[MDN-browser-compatibility-display-IE] ArrayPrototypePush', this, arguments)
         // inject css
         a[1] += css
         // cancel hijack
+        cancelHijackArrayPrototypePush = true
         Array.prototype.push = ArrayPrototypePush
     }
     return ArrayPrototypePush.apply(this, arguments)
 }
 
-const ArrayPrototypeIncludes = Array.prototype.includes
+let cancelHijackArrayPrototypeIncludes = false
 Array.prototype.includes = function (s) {
-    return ArrayPrototypeIncludes.apply(this, arguments) || (
-        s === ieName &&
-        ArrayPrototypeIncludes.call(this, "chrome") &&
-        ArrayPrototypeIncludes.call(this, "firefox") &&
-        ArrayPrototypeIncludes.call(this, "safari") &&
-        ArrayPrototypeIncludes.call(this, "nodejs")
-    )
+    if (cancelHijackArrayPrototypeIncludes) {
+        Array.prototype.includes = ArrayPrototypeIncludes
+    } else if (
+        (s === browserListHas[0] || s === ieId) &&
+        browserListHas.every(browserId => ArrayPrototypeIncludes.call(this, browserId))
+    ) {
+        ArrayPrototypePush.call(this, ieId);
+        // cancel hijack
+        cancelHijackArrayPrototypeIncludes = true
+        Array.prototype.includes = ArrayPrototypeIncludes
+        return true
+    }
+    return ArrayPrototypeIncludes.apply(this, arguments)
 }
 
-const ResponsePrototypeJson = Response.prototype.json
 Response.prototype.json = async function () {
     const out = await ResponsePrototypeJson.apply(this, arguments)
     if (out?.browsers && out.data?.__compat?.support) {
-        const ie = out.browsers[ieName]
+        const ie = out.browsers[ieId]
         if (ie) {
-            delete out.browsers[ieName]
-            out.browsers[ieName] = ie
+            delete out.browsers[ieId]
+            out.browsers[ieId] = ie
         } else {
-            out.browsers[ieName] = {
+            out.browsers[ieId] = {
                 "accepts_flags": false,
                 "accepts_webextensions": false,
                 "name": "Internet Explorer",
