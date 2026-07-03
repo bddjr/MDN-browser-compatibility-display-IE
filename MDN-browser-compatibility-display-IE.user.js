@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260703-1804
-// @description  MDN browser compatibility display IE
+// @version      20260703-1935
+// @description  Make MDN Web Docs' "Browser compatibility" table display "Internet Explorer".
 // @author       bddjr
 // @license      MIT
 // @match        https://developer.mozilla.org/*
@@ -75,9 +75,12 @@ Array.prototype.includes = function (browserId) {
 Response.prototype.json = async function () {
     const out = await ResponsePrototypeJson.apply(this, arguments)
     if (out?.browsers && out.data?.__compat?.support) {
-        const ie = out.browsers[ieId]
-        delete out.browsers[ieId]
-        out.browsers[ieId] = ie || {
+        let value;
+        if (Object.hasOwn(out.browsers, ieId)) {
+            value = out.browsers[ieId]
+            delete out.browsers[ieId]
+        }
+        out.browsers[ieId] = value ?? {
             "accepts_flags": false,
             "accepts_webextensions": false,
             "name": "Internet Explorer",
