@@ -4,7 +4,7 @@ Make [MDN Web Docs](https://developer.mozilla.org)' "Browser compatibility" tabl
 
 ## Setup
 
-Install TamperMonkey, then visit  
+Install [TamperMonkey](https://www.tampermonkey.net), then visit  
 https://raw.githubusercontent.com/bddjr/MDN-browser-compatibility-display-IE/refs/heads/main/MDN-browser-compatibility-display-IE.user.js
 
 ## Preview
