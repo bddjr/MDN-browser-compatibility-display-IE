@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name         MDN-browser-compatibility-display-IE
-// @version      20260703-1935
+// @version      20260703-1950
 // @description  Make MDN Web Docs' "Browser compatibility" table display "Internet Explorer".
+// @description:zh-CN 让 MDN Web Docs 的“浏览器兼容性”显示“Internet Explorer”。
 // @author       bddjr
 // @license      MIT
 // @match        https://developer.mozilla.org/*
