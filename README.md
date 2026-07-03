@@ -1,5 +1,7 @@
 # MDN browser compatibility display IE
 
+Make [MDN Web Docs](https://developer.mozilla.org)' "Browser compatibility" table display "Internet Explorer".
+
 ## Setup
 
 Install TamperMonkey, then visit  
