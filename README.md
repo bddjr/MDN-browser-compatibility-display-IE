@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> MDN now lets you customize "Browser compatibility settings", so this script is no longer needed.
+
 # MDN browser compatibility display IE
 
 Make [MDN Web Docs](https://developer.mozilla.org)' "Browser compatibility" table display "Internet Explorer".
